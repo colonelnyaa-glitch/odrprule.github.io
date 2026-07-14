@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ODRP 車両価格一覧</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      background: #fff;
+      color: #222;
+      line-height: 1.7;
+    }
+    main { padding: 22px; }
+    .bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    input, select {
+      padding: 11px 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 15px;
+    }
+    input { flex: 1; min-width: 220px; }
+    .wrap {
+      overflow: auto;
+      border: 1px solid #eee;
+      border-radius: 14px;
+      max-height: 760px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background: #fff5eb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: #9a4300;
+    }
+    tbody tr:hover { background: #fffaf5; }
+    td:nth-child(3) { font-weight: 700; color: #e66a00; }
+    td:nth-child(4), td:nth-child(5) { font-weight: 700; }
+    td:nth-child(6) {
+      white-space: normal;
+      min-width: 240px;
+      max-width: 420px;
+      color: #444;
+    }
+    .top-text {
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      border: 1px solid #ffd8b5;
+      border-radius: 14px;
+      background: #fff8f1;
+      color: #7a3800;
+      font-size: 16px;
+    }
+    .count { margin: 0 0 12px; color: #666; }
+    @media (max-width: 700px) {
+      main { padding: 12px; }
+      .bar { display: grid; grid-template-columns: 1fr; }
+      input { min-width: 0; width: 100%; }
+      select { width: 100%; }
+      th, td { padding: 9px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top-text">
+      確認不足で積載記載があるのに、実際には積載できない車両もあります。ご了承ください。
+    </div>
+
+    <div class="bar">
+      <input id="q" placeholder="車両名・カテゴリで検索">
+      <select id="cat"><option value="">すべてのカテゴリ</option></select>
+      <select id="sort">
+        <option value="">標準順</option>
+        <option value="a">価格が安い順</option>
+        <option value="d">価格が高い順</option>
+        <option value="la">積載量が少ない順</option>
+        <option value="ld">積載量が多い順</option>
+      </select>
+    </div>
+
+    <p class="count" id="cnt"></p>
+
+    <div class="wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>車両名</th>
+            <th>金額</th>
+            <th>積載量</th>
+            <th>ダッシュボード</th>
+            <th>説明</th>
+          </tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const C = [
+      "コンパクトカー","クーペ","オフロード","マッスルカー","セダン","SUV","バン","商業",
+      "バイク","自転車","スーパーカー","スポーツカー","クラシックスポーツカー","MOD車","ヘリコプター"
+    ];
+
+    const D = [
+      [0,"アスボ（Asbo）",250000],[0,"パント （Panto）",250000],[0,"ブリスタ （Blista）",400000],
+      [0,"ブリオッソ300・ワイドボディ(Brioso 300 Widebody)",400000],[0,"ディレタンテ （Dilettante）",400000],
+      [0,"イッシー （Issi）",400000],[0,"イッシーレトロ　(Issi Classic）",400000],[0,"ラプソディ （Rhapsody）",400000],
+      [0,"ブリオッソ300(Brioso 300)",400000],[0,"プレイリー （Prairie）",500000],[0,"ブリスタ・カンジョ(Blista Kanjo)",700000],
+      [0,"ウィーヴィル(Weevil)",700000],[0,"ブリオッソR/A(Brioso R/A)",750000],[0,"クラブ (Club)",1000000],
+      [1,"オラクル XS（Oracle XS）",4000000],[1,"コノシェンティ カブリオ （Cognoscenti Cabrio）",5400000],
+      [1,"エグゼンプラー （Exemplar）",5400000],[1,"フェロン （Felon）",5400000],[1,"カンジョSJ(Kanjo SJ)",5400000],
+      [1,"オラクル (Oracle)",5400000],[1,"ポストルード(Postlude)",5400000],[1,"センチネル （Sentinel）",5400000],
+      [1,"ザイオン カブリオ （Zion Cabrio）",5400000],[1,"フェロンGT （Felon GT）",6000000],[1,"ジャッカル （Jackal）",6000000],
+      [1,"センチネルXS （Sentinel XS）",6000000],[1,"ザイオン （Zion）",6000000],[1,"F620",6000000],
+      [1,"ウィンザードロップ （Windsor Drop）",6000000],[1,"プレビオン(Previon)",6500000],[1,"ウィンザー （Windsor）",8000000],
+      [2,"インジェクション （Injection）",2000000],[2,"カラハリ （Kalahari）",2000000],[2,"ストリートブレイザー(Street Blazer)",2700000],
+      [2,"デューンバギー （Dune Buggy）",2700000],[2,"ヘリオン(Hellion)",2700000],[2,"ラスティ レベル・反逆者（Rusty Rebel）",2700000],
+      [2,"HOTブレイザー （Hot Rod Blazer）",3000000],[2,"デューンローダー （Duneloader）",3000000],[2,"レベル （Rebel2）",3000000],
+      [2,"リアータ(Riata)",3000000],[2,"ベルス(Verus)",3000000],[2,"ビフタ （Bifta）",3250000],
+      [2,"ブレイザー （Blazer）",3250000],[2,"ブレイザー・ライフガード（Blazer Lifeguard）",3250000],[2,"ボーディ （Bodhi）",3250000],
+      [2,"ウィンキー（Winky）",3250000],[2,"トロフィートラック (Trophy Truck)",3400000],[2,"ランチャーXL （Rancher XL）",3750000],
+      [2,"カラカラ4x4(Caracara 4x4)",4050000],[2,"サンドキングXL （Sandking XL）",6000000],[2,"サンドキングSWB （SandkingSWB）",6000000],
+      [2,"カマチョ(Kamacho)",6000000],[2,"アウトロー(Outlaw)",6000000],[2,"フリークロウラー (Freecrawler)",7500000],
+      [2,"デザートレイド (Desert Raid)",7500000],[2,"ブロウラー （Brawler）",8250000],[2,"Yosemite Rancher(ヨセミテ・ランチャー)",8750000],
+      [2,"メサ・カスタム （Mesa3）",8750000],[2,"ダブスタ6x6（Dubsta 6x6）",12500000],[2,"Vagrant（ヴァグラント）",26000000],
+      [2,"ドラウグル(Draugur)",300000000],
+      [3,"スラムバン （Slamvan）",2700000],[3,"チューリップ(Tulip)",3000000],[3,"ウィーヴィル・カスタム (Weevil Custom)",3000000],
+      [3,"ファクション （Faction）",3400000],[3,"ブレイド （Blade）",4050000],[3,"バッカニア （Buccaneer）",4050000],
+      [3,"バッカニア・カスタム （Buccaneer Custom）",4050000],[3,"ビーター・デュークス(Beater Dukes)",4050000],
+      [3,"エリー(Ellie)",4050000],[3,"ガントレット （Gauntlet）",4050000],[3,"レッドウッドガントレット （Redwood Gauntlet）",4050000],
+      [3,"グリーンウッド(Greenwood)",4050000],[3,"ムーンビーム （Moonbeam）",4050000],[3,"ムーンビーム・カスタム (Moonbeam Custom)",4050000],
+      [3,"ナイトシェード （Nightshade）",4050000],[3,"フェニックス （Phoenix）",4050000],[3,"ピカドール （Picador）",4050000],
+      [3,"スタリオン（Stallion）",4050000],[3,"バーガーショットスタリオン （Burger Shot Stallion）",4050000],[3,"タンパ （Tampa）",4050000],
+      [3,"ヴァモス(Vamos)",4050000],[3,"ヴィゲーロ （Vigero）",4050000],[3,"ヴァーゴ （Virgo）",4050000],
+      [3,"ヴァーゴクラシック （Virgo Classic）",4050000],[3,"ブードゥー・カスタム （Voodoo Custom）",4050000],
+      [3,"ディーヴィアント(Deviant)",4250000],[3,"ホットナイフ （Hotknife）",4250000],[3,"インペイラー(Impaler)",4250000],
+      [3,"チノ（Chino）",4750000],[3,"チノ・カスタム （Chino Custom）",4750000],[3,"クリーク(Clique)",4750000],
+      [3,"セイバーGTターボ （Sabre Turbo）",4750000],[3,"バッファローSTX(Buffalo STX)",5400000],[3,"ドミネーター （Dominator）",5400000],
+      [3,"ドミネーターGTT（Dominator GTT）",5400000],[3,"ガントレットレトロ(Gauntlet Classic)",5400000],
+      [3,"ハスラー(Hustler)",5400000],[3,"ルイナー （Ruiner）",5400000],[3,"ロストスラムバン （Lost Slamvan）",5400000],
+      [3,"スラムバン・カスタム （Slamvan Custom）",5400000],[3,"ヴァーゴクラシック・カスタム （Virgo Classic Custom）",5400000],
+      [3,"ヨセミテ(Yosemite)",5400000],[3,"セイバーターボ・カスタム （Sabre Turbo Custom）",6250000],
+      [3,"ファクション・カスタム・ドンク (Faction Custom Donk)",8100000],[3,"ラーチャー （Lurcher）",19000000],
+      [3,"ガントレットレトロ・カスタム(Gauntlet Classic Custom)",20000000],[3,"ペヨーテガッサー(Peyote Gasser)",20000000],
+      [3,"バッファローEVX(Buffalo EVX)",25000000],[3,"ファクション・カスタム (Faction Custom)",25000000],
+      [3,"マニャーナ・カスタム(Manana Custom)",27000000],[3,"ラットトラック （Rat-Truck）",30000000],
+      [3,"デュークス （Dukes）",35000000],[3,"ルイナーZZ-8（Ruiner ZZ-8）",40000000],[3,"ヴィゲーロZX(Vigero ZX)",40000000],
+      [3,"ガントレットヘルファイア(Gauntlet Hellfire)",42500000],[3,"コケットブラックフィン（Coquette BlackFin）",45000000],
+      [3,"ドミネーターGTX(Dominator GTX)",45000000],[3,"ドミネーターASP(Dominator ASP)",45000000],
+      [3,"ヘルメス(Hermes)",45000000],[3,"ドリフトヨセミテ(Drift Yosemite)",45000000],
+      [4,"Glendale Custom(グレンデール・カスタム)",4050000],[4,"アステロープ （Asterope）",4050000],
+      [4,"アセア （Asea）",4050000],[4,"インゴット （Ingot）",4050000],[4,"エンペラー （Emperor）",4050000],
+      [4,"エンペラー （Emperor2）ラスティ版",4050000],[4,"グレンデール （Glendale）",4050000],[4,"サージ （Surge）",4050000],
+      [4,"スタニアー （Stanier）",4050000],[4,"ストラタム （Stratum）",4050000],[4,"テイルゲイター （Tailgater）",4050000],
+      [4,"フュージティブ （Fugitive）",4050000],[4,"プリモ （Primo）",4050000],[4,"プレミア （Premier）",4050000],
+      [4,"レジーナ （Regina）",4050000],[4,"ワシントン （Washington）",4050000],[4,"イントルーダー （Intruder）",4500000],
+      [4,"シャフター （Schafter）",4750000],[4,"シャフター LWB （Schafter LWB）",5000000],[4,"シャフターV12 （SchafterV12）",5000000],
+      [4,"ロメロ霊柩車 （Romero Hearse）",5000000],[4,"コノシェンティ （Cognoscenti）",5400000],
+      [4,"コノシェンティ55 （Cognoscenti 55）",5400000],[4,"スタッフォード (Stafford)",5400000],
+      [4,"テイルゲイターS(Tailgater S)",5400000],[4,"プリモ・カスタム （Primo Custom）",5400000],
+      [4,"ウォーレナーHKR（Warrener HKR）",6750000],[4,"ラインハート(Rhinehart)",6750000],[4,"ディアティ(Deity)",8100000],
+      [4,"チンクエミーラ(Cinquemila)",9000000],[4,"ウォーレナー （Warrener）",27500000],
+      [4,"ストレッチ （Stretch）",300000000],[4,"スーパーダイアモンド （Super Diamond） / スーパーダイヤ",500000000],
+      [5,"ビージェイXL （Beejay XL）",3400000],[5,"カヴァルケード （Cavalcade）旧型",3400000],
+      [5,"ハバネロ （Habanero）",3400000],[5,"ハントレーS （Huntley S）",3400000],[5,"アストロン(Astron)",4050000],
+      [5,"ボーラー （Baller）",4050000],[5,"ボーラー【2013タイプ】 （Baller2）",4050000],
+      [5,"カヴァルケード （Cavalcade2）新型",4050000],[5,"ダブスタ （Dubsta）",4050000],
+      [5,"ダブスタ２ （Dubsta2）",4050000],[5,"ジュビリー(Jubilee)",4050000],[5,"ランドストーカー （Landstalker）",4050000],
+      [5,"ノバク(Novak)",4050000],[5,"ロコト （Rocoto）",4050000],[5,"セラーノ （Serrano）",4050000],
+      [5,"ボーラーLE （Baller LE）",4750000],[5,"ボーラーLE LWB （Baller LE LWB）",4750000],
+      [5,"ボーラーST(Baller ST)",4750000],[5,"FQ 2",4750000],[5,"ランドストーカーXL(Landstalker XL)",4750000],
+      [5,"コンテンダー （Contender）",5400000],[5,"グレンジャー （Granger）",5400000],
+      [5,"グレズリー （Gresley）",5400000],[5,"I-ワーゲン(I-Wagen)",5400000],[5,"メサ （Mesa）",5400000],
+      [5,"レーディアス （Radius）",5400000],[5,"セミノール （Seminole）",5400000],
+      [5,"セミノール・フロンティア(Seminole Frontier)",5400000],[5,"XLS",5400000],
+      [5,"グレンジャー3600LX(Granger 3600LX)",6250000],[5,"パトリオット （Patriot）",6750000],
+      [5,"レブラGTS(Rebla GTS)",6750000],[5,"ヴェティル(Vetir)",6750000],
+      [5,"パトリオット・ストレッチ (Patriot Stretch)",10000000],[5,"トロス(Toros)",10000000],
+      [6,"ジャーニー （Journey）",4000000],[6,"サーファー （Surfer）",5000000],[6,"サーファー （Surfer2）",5000000],
+      [6,"ボブキャットXL （Bobcat XL）",5500000],[6,"ブリート (Burrito3)",5500000],[6,"ミニバン （Minivan）",5500000],
+      [6,"スピードー （Speedo）",5500000],[6,"バイソン （Bison）",6000000],[6,"ジャーニー2",6000000],
+      [6,"ミニバン・カスタム （Minivan Custom）",6000000],[6,"スピードー・カスタム (Speedo Custom)",6000000],
+      [6,"ヨウガ （Youga）",6000000],[6,"ヨウガ・クラシック(Youga classic)",6000000],
+      [6,"ギャング・ブリート （Gang Burrito）",6500000],[6,"ギャング・ブリート （Gang Burrito2）",6500000],
+      [6,"ヨウガ・クラシック4x4(Youga Classic 4x4)",6500000],[6,"ランポ・カスタム （Rumpo Custom）",7500000],
+      [7,"Taco Van（タコスバン）",12500000],[7,"パウンダー （Pounder）",15000000],
+      [7,"パウンダー.・カスタム（Pounder Custom）",15000000],[7,"パッカー （Packer）",15000000,"積載無し"],
+      [7,"ファントム （Phantom）",15000000,"積載無し"],[7,"ファントム・カスタム (Phantom Custom)",15000000,"積載無し"],
+      [7,"ベンソン （Benson）",15000000],[7,"ホーラー （Hauler）",15000000,"積載無し"],
+      [7,"ミュール （Mule2）",15000000],[7,"ミュール・カスタム (Mule Custom)",15000000],
+      [7,"ミュール（Mule）",15000000],[7,"ミュール（Mule3）",15000000],
+      [8,"ファギオ （Faggio）",250000],[8,"ファギオスポーツ(Faggio Sport)",250000],[8,"ファギオMOD(Faggio Mod)",500000],
+      [8,"エンデューロ （Enduro）",1250000],[8,"バガー （Bagger）",1650000],[8,"ダブルT （Double T）",2500000],
+      [8,"サンチェス（オリジナル） （Sanchez）",2500000],[8,"サンチェス2 （Sanchez2）",2500000],
+      [8,"ラットバイク(Rat Bike)",2700000],[8,"エスキー（Esskey）",3250000],[8,"FCR1000（FCR 1000）",3250000],
+      [8,"マンチェス(Manchez)",3250000],[8,"デファイラー(Defiler)",3750000],[8,"ラフィアン （Ruffian）",4000000],
+      [8,"クリフハンガー（Cliffhanger）",4000000],[8,"ベイダー （Vader）",4000000],[8,"ヴィンディケーター （Vindicator）",4050000],
+      [8,"FCR1000・カスタム(FCR 1000 Custom)",4750000],[8,"アクマ （Akuma）",5000000],
+      [8,"ボルテックス(Vortex)",5000000],[8,"サブリン （Sovereign）",5000000],[8,"ディアブロス(Diabolus)",5040000],
+      [8,"マンチェススカウト(Manchez Scout)",5040000],[8,"ネメシス （Nemesis）",5040000],[8,"PCJ600（PCJ 600）",5040000],
+      [8,"イノベーション （Innovation）",5500000],[8,"スラスト （Thrust）",6250000],[8,"ゾンビボバー(Zombie Bobber)",6250000],
+      [8,"デーモン （Daemon）",6750000],[8,"BF400",7000000],[8,"ディアブロス・カスタム(Diabolus Custom)",7000000],
+      [8,"バティー801 （Bati 801）",7500000],[8,"バティー801RR （Bati 801RR）",7500000],[8,"リーバー(Reever)",7500000],
+      [8,"Stryder(ストライダー)",7500000],[8,"キメラ(Chimera)",8100000],[8,"ヘクサー （Hexer）",8750000],
+      [8,"ガーゴイル(Gargoyle)",9500000],[8,"ゾンビチョッパー(Zombie Chopper)",10000000],
+      [8,"ウルフスベイン（WolfSbane）",10500000],[8,"ナイトブレード（Nightblade）",12000000],
+      [8,"TT750",12500000],[8,"サンクタス(Sanctus)",21500000],[8,"アヴァルス(Avarus)",24300000],
+      [8,"ハクチョウ （Hakuchou）",39000000],[8,"XP1",40000000],[8,"カーボンRS（Carbon RS）",46000000],
+      [8,"シノビ(Shinobi)",60000000],[8,"ハクチョウドラッグ(Hakuchou Drag)",65000000],[8,"ショータロー（Shotaro）",250000000],
+      [9,"ウィペット(Whippet Race Bike)",50000],[9,"エンデュレックス(Endurex Race Bike)",50000],
+      [9,"クルーザー （Cruiser）",50000],[9,"フィックスター(Fixter)",50000],[9,"スコーチャー(Scorcher)",50000],
+      [9,"BMX",75000],[9,"ゴルフカート （Caddy）",3500000],[9,"ゴルフカート （Caddy2）",3500000],
+      [9,"ゴルフカート （Caddy3）",3500000],
+      [10,"バンシー900R（Banshee 900R）",55000000],[10,"エンティティ XXR(Entity XXR)",70000000],
+      [10,"タイパン(Taipan)",70000000],[10,"エンティティXF(Entity XF)",100000000],[10,"アダー （Adder）",110000000],
+      [10,"オーターク(Autarch)",125000000],[10,"チーター(Cheetah)",135000000],[10,"811",150000000],
+      [10,"ツーリスモR(Turismo R)",170000000],[10,"タイラント（Tyrant）",170000000],[10,"オシリス （Osiris）",255000000],
+      [10,"イタリGTB・カスタム(Itali GTB Custom)",270000000],[10,"イタリGTB (Itali GTB)",270000000],
+      [10,"エメラス(Emerus)",300000000],[10,"ゼントーノ （Zentorno）",350000000],[10,"フューリア(Furia)",400000000],
+      [10,"S80RR",420000000],[10,"サイクロン(Cyclone)",480000000],[10,"テザラクト(Tezeract)",480000000],
+      [10,"ネロ （Nero）",580000000],[10,"ヴァーチャー(Vietue)",580000000],[10,"ネロ・カスタム(Nero Custom)",600000000],
+      [10,"クリーガー(Krieger)",600000000],[10,"イグナス(Ignus)",650000000],[10,"デヴェステ・エイト(Deveste Eight)",680000000],
+      [10,"トラクス(Thrax)",700000000],[10,"テンペスタ(Tempesta)",350000000],[10,"ゾラッソ",550000000],
+      [10,"クリーガー(Krieger)",450000000],[10,"ヴァグネル(Vagner)",550000000],[10,"RE7B",450000000],
+      [10,"LM87",500000000],[10,"X80 Proto",440000000],[10,"XA-21",450000000],[10,"トレロXO（ToreroXO）",670000000],
+      [11,"ゴーゴーモンキーブリスタ （Go Go Monkey Blista）",3400000],[11,"アルファ （Alpha）",4750000],
+      [11,"フューソラード （Fusilade）",4750000],[11,"バッファロー （Buffalo）",7000000],
+      [11,"バッファローS （Buffalo S）",7000000],[11,"ドリフトタンパ （Drift Tampa）",7000000],
+      [11,"ラプター （Raptor）",7000000],[11,"スプランクバッファロー （Sprunk Buffalo）",7000000],
+      [11,"ヴェトレトロ（Veto Classic）",7000000],[11,"ヴェトモダン（Veto Modern）",7000000],
+      [11,"ホットリングセイバー (Hotring Sabre)",8000000],[11,"バンシー （Banshee）",13500000],
+      [11,"フロレGT （Furore GT）",13500000],[11,"センチネルレトロ (Sentinel Classic)",13500000],
+      [11,"センチネルレトロ・ワイドボディ (Sentinel Classic Widebody)",13500000],[11,"フェルツァー （Feltzer）",20000000],
+      [11,"8Fドラフター(8F Drafter)",20000000],[11,"コメット （Comet）",20000000],[11,"サイファー(Cypher)",20000000],
+      [11,"エレジーRH8 (Elegy RH8)",20000000],[11,"ラストン(Ruston)",20000000],
+      [11,"コメット・レトロカスタム （Comet Retro Custom）",20500000],[11,"ジェスターレトロ (Jester Classic)",21500000],
+      [11,"リンクス （Lynx）",21500000],[11,"ラピッドGT （Rapid GT）",21500000],[11,"ラピッドGT （Rapid GT2）",21500000],
+      [11,"RT3000",21500000],[11,"ストレイター(Streiter)",21500000],[11,"サルタン （Sultan）",21500000],
+      [11,"V-STR",21500000],[11,"ベスティアGTS （Bestia GTS）",23000000],[11,"コメットS2(Comet S2)",23000000],
+      [11,"コメットS2カブリオ(Comet S2 Cabrio)",23000000],[11,"コメットSR（Comet SR）",23000000],
+      [11,"セブン-70（Seven-70）",23000000],[11,"カルボニツァーレ （Carbonizzare）",23500000],
+      [11,"ユーロス(Euros)",23500000],[11,"フラッシュGT(Flash GT)",23500000],[11,"GB200",23500000],
+      [11,"オムニス（Omnis）",23500000],[11,"スラーノ （Surano）",23500000],[11,"トロポスラリー (Tropos Rallye)",23500000],
+      [11,"ZR350",23500000],[11,"カーミリオン （Khamelion）",29000000],[11,"Komoda(コモダ)",29000000],
+      [11,"シュワルツァー （Schwartzer）",29000000],[11,"スゴイ(Sugoi)",29000000],[11,"フェリエラー （Verlierer）",29000000],
+      [11,"コケット （Coquette）",30500000],[11,"ジェスターRR(Jestar RR)",30500000],
+      [11,"スペクター (Specter)",30500000],[11,"スペクター・カスタム (Specter Custom)",30500000],
+      [11,"キャリコGTF(Calico GTF)",34500000],[11,"グロウラー(Growler)",35000000],[11,"サルタンレトロ(Sultan Classic)",35000000],
+      [11,"10F",35350000],[11,"10F・ワイドボディ(10F Widebody)",35350000],[11,"9F",35350000],
+      [11,"9Fカブリオ（9F Cabrio）",35350000],[11,"コメットサファリ（Comet Safari）",42500000],
+      [11,"コルシタ(Corsita)",42500000],[11,"ジェスター （Jester）",42500000],[11,"エレジー・レトロカスタム （Elegy Retro Custom）",44500000],
+      [11,"ローカスト(Locust)",44500000],[11,"SM722",44500000],[11,"マッサクロ （Massacro）",46500000],
+      [11,"マッサクロ(レースカー)（Massacro (Racecar)）",46500000],[11,"オムニスe-GT(Omnis e-GT)",46500000],
+      [11,"シュラーゲンGT(Schlagen GT)",55000000],[11,"ジャギュラー(Jugular)",65000000],
+      [11,"コケットD10(Coquette D10)",65000000],[11,"サルタンRSレトロ(Sultan RS Classic)",65000000],
+      [11,"ベクター（Vectre）",65000000],[11,"Imorgon(イモーゴン)",70000000],[11,"ネオン(Neon)",70000000],
+      [11,"Raiden（ライデン）",70000000],[11,"ネオ(Neo)",80000000],[11,"パライア（Pariah）",80000000],
+      [11,"イタリGTO(Itali GTO)",140000000],[11,"パラゴンR(Paragon R)",150000000],
+      [11,"リボルター(Revolter)",170000000],[11,"イタリRSX(Itali RSX)",200000000],
+      [11,"イッシースポーツ(Issi Sport)",50000000],[11,"フト （Futo）",6000000],[11,"フトGTX（Futo GTX）",6000000],
+      [11,"ブリスタ コンパクト（Blista Compact）",2500000],[11,"ペナンブラ （Penumbra）",20000000],
+      [11,"サルタンRS(Sultan RS)",55000000],
+      [12,"チェブレック(Cheburek)",4000000],[12,"ネビュラターボ(Nebula Turbo)",5000000],
+      [12,"ダイナスティー(Dynasty)",6500000],[12,"ピガール （Pigalle）",6500000],
+      [12,"ファガロア(Fagaloa)",7500000],[12,"レトニュー(Retinue)",7500000],
+      [12,"ラピッドGTレトロ　(Rapid GT Classic)",8000000],[12,"レトニュー Mk2(Retinue Mk II)",8000000],
+      [12,"マニャーナ （Manana）",9500000],[12,"ミッチェリGT(Michelli GT)",10000000],
+      [12,"190z",13500000],[12,"サベストラ(Savestra)",15000000],[12,"ザイオンレトロ(Zion Classic)",17500000],
+      [12,"ペヨーテ （Peyote）",19000000],[12,"アーデント（Ardent）",19500000],
+      [12,"ペヨーテ・カスタム(Peyote Custom)",22500000],[12,"トルネード・ラットロッド （Tornado Rat Rod）",23000000],
+      [12,"チーターレトロ (Cheetah Classic)",29500000],[12,"マンバ （Mamba）",30500000],
+      [12,"トルネード （Tornado）",34000000],[12,"トルネード （Tornado2）",34000000],
+      [12,"トルネード （Tornado3）",34000000],[12,"トルネード （Tornado4）",34000000],
+      [12,"トルネード・カスタム （Tornado Custom）",35000000],[12,"ヴィセリス(Viseris)",36500000],
+      [12,"コケットレトロ （Coquette Classic）",44500000],[12,"ルーズヴェルト （Roosevelt）",44500000],
+      [12,"ルーズヴェルトバロー （Roosevelt Valor）",44500000],[12,"GT500",55000000],
+      [12,"インフェルナスレトロ（Infernus Classic）",55000000],[12,"モンロー （Monroe）",60000000],
+      [12,"スターリングGT （Stirling GT）",70000000],[12,"スティンガーGT （Stinger GT）",70000000],
+      [12,"トレロ (Torero)",90000000],[12,"カスコ （Casco）",185000000],[12,"スティンガー （Stinger）",200000000],
+      [12,"ツーリスモレトロ (Turismo Classic)",200000000],[12,"スウィンガー (Swinger)",340000000],
+      [12,"Zタイプ （Z Type）",550000000],
+      [13,"エレジーRH5",200000000],[13,"エレジーRH6",200000000],[13,"エレジーRH7",400000000],
+      [13,"エレジーRH7 Hycade",600000000],[13,"kawaii",12000000],[13,"サンライズR",150000000],
+      [13,"トラクスＳ",800000000],[13,"トラクスＤ",700000000],[13,"イタリGTR",900000000],
+      [13,"イタリGTO N-Larga Custom",900000000],
+      [14,"ハボック",100000000],[14,"スパロー",200000000],[14,"シースパロー",210000000],
+      [14,"バザード",220000000],[14,"マベリック",340000000],[14,"フロガー",400000000],
+      [14,"コナダ",600000000],[14,"スーパーヴォリト",600000000],[14,"スーパーヴォリト カーボン",600000000],
+      [14,"ヴォラタス",1500000000],[14,"スイフト",1200000000],[14,"スイフト デラックス",1300000000]
+    ];
+
+    const LOAD_BY_CATEGORY = {
+      "商業": 2000, "バン": 800, "SUV": 150, "コンパクトカー": 150, "セダン": 100,
+      "マッスルカー": 100, "オフロード": 200, "クーペ": 100,
+      "クラシックスポーツカー": 100, "スポーツカー": 100, "スーパーカー": 100,
+      "バイク": 0, "自転車": 0, "MOD車": 0, "ヘリコプター": 0
+    };
+
+    const LOAD_BY_VEHICLE = {
+      "taco": 800, "タコスバン": 800,
+      "pounder": 2000, "パウンダー": 2000,
+      "benson": 2000, "ベンソン": 2000,
+      "mule2": 2000, "mule3": 2000, "mule4": 2000, "mule": 2000, "ミュール": 2000,
+      "italigto": 100,
+      "packer": 0, "パッカー": 0,
+      "phantom custom": 0, "phantom": 0, "ファントム・カスタム": 0, "ファントム": 0,
+      "hauler": 0, "ホーラー": 0,
+      "desert raid": 0, "デザートレイド": 0,
+      "jester": 0, "ジェスター": 0,
+      "flash gt": 0, "フラッシュgt": 0
+    };
+
+    const q = document.getElementById("q");
+    const cat = document.getElementById("cat");
+    const sort = document.getElementById("sort");
+    const cnt = document.getElementById("cnt");
+    const body = document.getElementById("body");
+
+    function yen(n) { return "¥" + n.toLocaleString("ja-JP"); }
+
+    function loadKg(r) {
+      const catName = C[r[0]];
+      const name = r[1].toLowerCase();
+      for (const key in LOAD_BY_VEHICLE) {
+        if (name.includes(key.toLowerCase())) return LOAD_BY_VEHICLE[key];
+      }
+      return LOAD_BY_CATEGORY[catName] || 0;
+    }
+
+    function loadText(r) {
+      const kg = loadKg(r);
+      return kg ? kg + "kg" : "-";
+    }
+
+    C.forEach(x => {
+      const option = document.createElement("option");
+      option.value = x;
+      option.textContent = x;
+      cat.appendChild(option);
+    });
+
+    function draw() {
+      const k = q.value.trim().toLowerCase();
+      const c = cat.value;
+      const s = sort.value;
+
+      let a = D.filter(r => {
+        const categoryName = C[r[0]];
+        const vehicleName = r[1];
+        const description = r[3] || "";
+        return (!c || categoryName === c) &&
+          (categoryName + " " + vehicleName + " " + description).toLowerCase().includes(k);
+      });
+
+      if (s === "a") a.sort((x, y) => x[2] - y[2]);
+      if (s === "d") a.sort((x, y) => y[2] - x[2]);
+      if (s === "la") a.sort((x, y) => loadKg(x) - loadKg(y));
+      if (s === "ld") a.sort((x, y) => loadKg(y) - loadKg(x));
+
+      cnt.textContent = `表示 ${a.length} / ${D.length} 台`;
+      body.innerHTML = a.map(r => `
+        <tr>
+          <td>${C[r[0]]}</td>
+          <td>${r[1]}</td>
+          <td>${yen(r[2])}</td>
+          <td>${loadText(r)}</td>
+          <td>50kg</td>
+          <td>${r[3] || "-"}</td>
+        </tr>
+      `).join("");
+    }
+
+    q.addEventListener("input", draw);
+    cat.addEventListener("change", draw);
+    sort.addEventListener("change", draw);
+    draw();
+  </script>
+</body>
+</html>
