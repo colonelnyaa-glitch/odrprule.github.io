@@ -123,6 +123,14 @@
     selectCategory(active, false);
   }
 
+  // Supabase版では odrp:content-ready を待っていましたが、
+  // 静的サイト版では通常のDOM読み込み完了時にも初期化します。
   window.addEventListener('odrp:content-ready', init, { once: true });
-  if (window.ODRP_CONTENT_READY) init();
+  if (window.ODRP_CONTENT_READY) {
+    init();
+  } else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
