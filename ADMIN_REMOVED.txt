@@ -1,0 +1,3 @@
+管理者ログイン・Supabaseリアルタイム編集機能を削除しました。
+現在は通常の静的GitHub Pagesサイトです。
+更新する場合は index.html / style.css / script.js をVSCode等で編集し、GitHubへpushしてください。
