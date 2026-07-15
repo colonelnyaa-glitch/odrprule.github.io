@@ -123,14 +123,13 @@
     selectCategory(active, false);
   }
 
-  // Supabase版では odrp:content-ready を待っていましたが、
-  // 静的サイト版では通常のDOM読み込み完了時にも初期化します。
-  window.addEventListener('odrp:content-ready', init, { once: true });
-  if (window.ODRP_CONTENT_READY) {
-    init();
-  } else if (document.readyState === 'loading') {
+  // 静的サイト版ではSupabaseの完了イベントを待たず、通常のページ読み込みで初期化する。
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
     init();
   }
+
+  // 旧Supabase版との互換用。すでに初期化済みなら何もしない。
+  window.addEventListener('odrp:content-ready', init, { once: true });
 })();
