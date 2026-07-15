@@ -4,75 +4,86 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>ODRP サイト管理画面</title>
+  <title>ODRP リアルタイム管理画面</title>
   <link rel="stylesheet" href="admin.css">
+  <script defer src="config.js"></script>
   <script defer src="admin.js"></script>
 </head>
 <body>
-  <header class="admin-header">
-    <div>
-      <p>ODRP WEBSITE EDITOR</p>
-      <h1>サイト管理画面</h1>
-    </div>
-    <div class="header-actions">
-      <button id="desktopBtn" class="active">PC</button>
-      <button id="mobileBtn">スマホ</button>
-      <a href="index.html" target="_blank" rel="noopener">公開ページ</a>
-    </div>
-  </header>
+  <section class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm">
+      <p class="kicker">ODRP WEBSITE ADMIN</p>
+      <h1>管理者ログイン</h1>
+      <label>管理者ID<input id="loginId" autocomplete="username" required></label>
+      <label>パスワード<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">ログイン</button>
+      <p id="loginMessage" class="message"></p>
+    </form>
+  </section>
 
-  <main class="admin-layout">
-    <aside class="admin-panel">
-      <section>
-        <h2>編集方法</h2>
-        <ol>
-          <li>右のプレビュー内の文章・見出しをクリック</li>
-          <li>そのまま文字を編集</li>
-          <li>画像・リンクは要素をクリックして下の欄で変更</li>
-          <li>最後に「index.htmlを書き出す」</li>
-        </ol>
+  <div id="editorApp" hidden>
+    <header class="admin-header">
+      <div><p>ODRP LIVE EDITOR</p><h1>リアルタイム管理画面</h1></div>
+      <div class="header-actions">
+        <button id="desktopBtn" class="active">PC</button>
+        <button id="mobileBtn">スマホ</button>
+        <button id="saveBtn" class="save">保存して公開</button>
+        <a href="index.html" target="_blank" rel="noopener">公開ページ</a>
+        <button id="logoutBtn">ログアウト</button>
+      </div>
+    </header>
+
+    <main class="admin-layout">
+      <aside class="admin-panel">
+        <section>
+          <h2>直接編集</h2>
+          <p class="hint">右側の文章・見出し・表・箇条書きをクリックして、そのまま入力します。</p>
+          <p id="selectedInfo" class="selected-info">要素を選択してください</p>
+        </section>
+
+        <section>
+          <h2>要素操作</h2>
+          <div class="button-grid">
+            <button id="addListBtn">箇条書きを追加</button>
+            <button id="duplicateBtn">要素を複製</button>
+            <button id="deleteBtn" class="danger">選択要素を削除</button>
+            <button id="undoBtn">1つ戻す</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>リンク・画像</h2>
+          <label>リンクURL<input id="linkInput" type="text" placeholder="https://... または #category"></label>
+          <label>画像URL / パス<input id="imageInput" type="text" placeholder="assets/images/example.png"></label>
+          <label>画像説明<input id="altInput" type="text" placeholder="画像の説明"></label>
+          <button id="applyElementBtn">選択要素へ反映</button>
+        </section>
+
+        <section>
+          <h2>枠・CSS編集</h2>
+          <label>背景色<input id="backgroundInput" type="text" placeholder="#ffffff / transparent"></label>
+          <label>文字色<input id="colorInput" type="text" placeholder="#172033"></label>
+          <label>枠線<input id="borderInput" type="text" placeholder="1px solid #e5e7eb"></label>
+          <label>角丸<input id="radiusInput" type="text" placeholder="12px"></label>
+          <label>内側余白<input id="paddingInput" type="text" placeholder="16px"></label>
+          <label>外側余白<input id="marginInput" type="text" placeholder="0 0 16px"></label>
+          <button id="applyStyleBtn">CSSを反映</button>
+          <button id="clearStyleBtn">個別CSSを解除</button>
+        </section>
+
+        <section>
+          <h2>サイト全体の追加CSS</h2>
+          <textarea id="customCss" rows="9" placeholder="例: .rule-card { box-shadow: ...; }"></textarea>
+          <button id="applyCssPreviewBtn">プレビューへ反映</button>
+        </section>
+
+        <div id="message" class="message" aria-live="polite"></div>
+      </aside>
+
+      <section class="preview-shell" id="previewShell">
+        <iframe id="siteFrame" src="index.html" title="ODRPサイト編集プレビュー"></iframe>
       </section>
-
-      <section>
-        <h2>選択中の要素</h2>
-        <p id="selectedInfo" class="selected-info">まだ選択されていません</p>
-        <label>リンクURL
-          <input id="linkInput" type="text" placeholder="https://... または #support" disabled>
-        </label>
-        <label>画像URL / ファイルパス
-          <input id="imageInput" type="text" placeholder="assets/example.png" disabled>
-        </label>
-        <label>画像説明（alt）
-          <input id="altInput" type="text" placeholder="画像の説明" disabled>
-        </label>
-        <button id="applyElementBtn" disabled>選択要素へ反映</button>
-      </section>
-
-      <section>
-        <h2>編集データ</h2>
-        <div class="button-grid">
-          <button id="saveDraftBtn">ブラウザに一時保存</button>
-          <button id="loadDraftBtn">一時保存を復元</button>
-          <button id="resetBtn" class="danger">変更をリセット</button>
-        </div>
-        <button id="downloadBtn" class="primary">index.htmlを書き出す</button>
-        <p class="hint">書き出したファイルをGitHubの既存の <code>index.html</code> と入れ替えてください。</p>
-      </section>
-
-      <section>
-        <h2>画像追加</h2>
-        <label>画像ファイル
-          <input id="uploadInput" type="file" accept="image/*">
-        </label>
-        <p class="hint">画像は自動でサイト内へ保存されません。先に <code>assets</code> フォルダへ画像を入れ、画像パスを指定する方法がおすすめです。</p>
-      </section>
-
-      <div id="message" class="message" aria-live="polite"></div>
-    </aside>
-
-    <section class="preview-shell" id="previewShell">
-      <iframe id="siteFrame" src="index.html" title="ODRPサイト編集プレビュー"></iframe>
-    </section>
-  </main>
+    </main>
+  </div>
 </body>
 </html>
