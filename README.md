@@ -33,3 +33,7 @@ GitHub Pages用の静的サイトです。カテゴリーは参考画像と同�
 ### GitHub設定
 
 Fine-grained personal access token を作成し、対象リポジトリの `Contents: Read and write` 権限を付与してください。管理画面右上の「GitHub設定」にユーザー名、リポジトリ名、ブランチ、トークンを入力します。トークンはセッションストレージにのみ保存され、リポジトリのファイルには書き込まれません。
+
+## Visual Editor
+
+管理画面は `admin.html` です。ODRP用の初期設定として、GitHubユーザー名は `dreamuuu-0510`、リポジトリ名は `odrprule.github.io`、ブランチは `main` が入力されています。実際のリポジトリ名が異なる場合のみ、GitHub設定から変更してください。
