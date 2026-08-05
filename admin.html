@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ODRP Visual Studio</title>
+  <link rel="stylesheet" href="admin.css">
+  <script defer src="admin.js"></script>
+</head>
+<body>
+  <header class="studio-topbar">
+    <div class="brand"><span class="brand-mark">O</span><div><strong>ODRP Visual Studio</strong><small>ルールサイト編集</small></div></div>
+    <div class="history-controls">
+      <button id="undoBtn" title="元に戻す (Ctrl+Z)" disabled>↶</button>
+      <button id="redoBtn" title="やり直す (Ctrl+Shift+Z)" disabled>↷</button>
+      <span id="saveState" class="save-state">未変更</span>
+    </div>
+    <div class="top-actions">
+      <button id="settingsBtn" class="secondary">GitHub設定</button>
+      <button id="historyBtn" class="secondary">変更履歴</button>
+      <button id="previewBtn" class="secondary">新しいタブで確認</button>
+      <button id="publishBtn" class="primary">GitHubへ公開</button>
+    </div>
+  </header>
+
+  <main class="studio-layout">
+    <aside class="left-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-left-tab="pages">ページ</button>
+        <button class="panel-tab" data-left-tab="layers">レイヤー</button>
+      </div>
+      <section id="pagesPanel" class="panel-section active">
+        <label class="field-label" for="pageSelect">編集するページ</label>
+        <select id="pageSelect">
+          <option value="index.html">ルールサイト</option>
+          <option value="vehicle-prices.html">車両価格ページ</option>
+        </select>
+        <button id="reloadBtn" class="wide-button">ページを再読み込み</button>
+        <div class="help-card">
+          <strong>操作方法</strong>
+          <p>中央の文字・画像・ボタンをクリックすると、右側で編集できます。ダブルクリックで文章を直接編集できます。</p>
+        </div>
+      </section>
+      <section id="layersPanel" class="panel-section">
+        <input id="layerSearch" type="search" placeholder="要素を検索">
+        <div id="layerTree" class="layer-tree"></div>
+      </section>
+    </aside>
+
+    <section class="canvas-area">
+      <div class="canvas-toolbar">
+        <div class="viewport-buttons" role="group" aria-label="表示サイズ">
+          <button class="viewport active" data-width="100%">PC</button>
+          <button class="viewport" data-width="768px">タブレット</button>
+          <button class="viewport" data-width="390px">スマホ</button>
+        </div>
+        <div class="zoom-controls">
+          <button id="zoomOut">−</button><span id="zoomLabel">100%</span><button id="zoomIn">＋</button>
+        </div>
+      </div>
+      <div id="canvasScroller" class="canvas-scroller">
+        <div id="canvasFrame" class="canvas-frame">
+          <iframe id="siteFrame" title="サイトプレビュー"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <aside class="right-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-right-tab="content">内容</button>
+        <button class="panel-tab" data-right-tab="design">デザイン</button>
+        <button class="panel-tab" data-right-tab="settings">設定</button>
+      </div>
+      <div id="emptySelection" class="empty-selection">編集したい要素を選択してください。</div>
+      <section id="contentPanel" class="property-panel active"></section>
+      <section id="designPanel" class="property-panel"></section>
+      <section id="elementSettingsPanel" class="property-panel"></section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <dialog id="githubDialog">
+    <form method="dialog" class="dialog-card" id="githubForm">
+      <div class="dialog-head"><h2>GitHub接続設定</h2><button value="cancel" aria-label="閉じる">×</button></div>
+      <p>設定はこのブラウザのセッション内だけに保存されます。トークンをサイトのコードへ埋め込むことはありません。</p>
+      <label>GitHubユーザー名<input id="ghOwner" required autocomplete="username" value="dreamuuu-0510"></label>
+      <label>リポジトリ名<input id="ghRepo" required value="rmgtarules"></label>
+      <label>ブランチ<input id="ghBranch" required value="main"></label>
+      <label>Fine-grained token<input id="ghToken" type="password" required autocomplete="off" placeholder="github_pat_..."></label>
+      <div class="dialog-actions"><button type="button" id="testConnection" class="secondary">接続確認</button><button type="submit" value="default" class="primary">保存</button></div>
+      <div id="connectionResult" class="connection-result" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <dialog id="historyDialog">
+    <div class="dialog-card history-dialog">
+      <div class="dialog-head"><h2>変更履歴</h2><button id="closeHistory" aria-label="閉じる">×</button></div>
+      <div class="history-toolbar"><button id="refreshHistory" class="secondary">再読み込み</button><span>GitHubのコミット履歴を表示します</span></div>
+      <div id="commitList" class="commit-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="publishDialog">
+    <form method="dialog" class="dialog-card" id="publishForm">
+      <div class="dialog-head"><h2>サイトを公開</h2><button value="cancel" aria-label="閉じる">×</button></div>
+      <label>変更内容<input id="commitMessage" required maxlength="120" placeholder="例：犯罪ルールを更新"></label>
+      <label>更新者<input id="commitAuthor" maxlength="50" placeholder="例：運営チーム"></label>
+      <div class="publish-summary" id="publishSummary"></div>
+      <div class="dialog-actions"><button value="cancel" class="secondary">キャンセル</button><button type="submit" value="default" class="primary">公開する</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
