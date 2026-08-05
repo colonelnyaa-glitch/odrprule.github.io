@@ -17,6 +17,7 @@
       <span id="saveState" class="save-state">未変更</span>
     </div>
     <div class="top-actions">
+      <button id="addImageBtn" class="secondary">＋ 画像を追加</button>
       <button id="settingsBtn" class="secondary">GitHub設定</button>
       <button id="historyBtn" class="secondary">変更履歴</button>
       <button id="previewBtn" class="secondary">新しいタブで確認</button>
@@ -35,11 +36,12 @@
         <select id="pageSelect">
           <option value="index.html">ルールサイト</option>
           <option value="vehicle-prices.html">車両価格ページ</option>
+          <option value="changelog.html">変更履歴ページ</option>
         </select>
         <button id="reloadBtn" class="wide-button">ページを再読み込み</button>
         <div class="help-card">
           <strong>操作方法</strong>
-          <p>中央の文字・画像・ボタンをクリックすると、右側で編集できます。ダブルクリックで文章を直接編集できます。</p>
+          <p>文字や画像はクリック、メニューやボタンはAlt+クリックで編集対象にできます。通常クリックではカテゴリー移動など本来の操作ができます。</p>
         </div>
       </section>
       <section id="layersPanel" class="panel-section">
@@ -97,7 +99,7 @@
   <dialog id="historyDialog">
     <div class="dialog-card history-dialog">
       <div class="dialog-head"><h2>変更履歴</h2><button id="closeHistory" aria-label="閉じる">×</button></div>
-      <div class="history-toolbar"><button id="refreshHistory" class="secondary">再読み込み</button><span>GitHubのコミット履歴を表示します</span></div>
+      <div class="history-toolbar"><button id="refreshHistory" class="secondary">再読み込み</button><select id="historyCategory"><option value="">全カテゴリー</option></select><select id="historyOrder"><option value="new">新しい順</option><option value="old">古い順</option></select></div>
       <div id="commitList" class="commit-list"></div>
     </div>
   </dialog>
@@ -105,10 +107,26 @@
   <dialog id="publishDialog">
     <form method="dialog" class="dialog-card" id="publishForm">
       <div class="dialog-head"><h2>サイトを公開</h2><button value="cancel" aria-label="閉じる">×</button></div>
-      <label>変更内容<input id="commitMessage" required maxlength="120" placeholder="例：犯罪ルールを更新"></label>
-      <label>更新者<input id="commitAuthor" maxlength="50" placeholder="例：運営チーム"></label>
+      <label>更新日時<input id="changeDate" type="datetime-local" readonly></label>
+      <label>更新したルール<input id="changeRule" required placeholder="例：人質について"></label>
+      <label>カテゴリー<input id="changeCategory" required placeholder="例：犯罪ルール"></label>
+      <label>変更後<textarea id="changeAfter" rows="5" required placeholder="変更後の内容を入力"></textarea></label>
+      <label>バージョン番号<input id="changeVersion" placeholder="未入力なら自動採番"></label>
+      <label>コミット内容<input id="commitMessage" required maxlength="120" placeholder="例：犯罪ルールを更新"></label>
       <div class="publish-summary" id="publishSummary"></div>
       <div class="dialog-actions"><button value="cancel" class="secondary">キャンセル</button><button type="submit" value="default" class="primary">公開する</button></div>
+    </form>
+  </dialog>
+<dialog id="imageDialog">
+    <form method="dialog" class="dialog-card" id="imageForm">
+      <div class="dialog-head"><h2>画像を追加</h2><button value="cancel" aria-label="閉じる">×</button></div>
+      <label>画像ファイル<input id="imageFile" type="file" accept="image/*"></label>
+      <label>または画像URL<input id="imageUrl" type="url" placeholder="https://..."></label>
+      <label>代替テキスト<input id="imageAlt" placeholder="画像の説明"></label>
+      <label>追加位置<select id="imagePlacement"><option value="inside">選択要素の中</option><option value="before">選択要素の前</option><option value="after">選択要素の後</option></select></label>
+      <label class="check-row"><input id="imageFree" type="checkbox">自由配置にする</label>
+      <div class="style-grid"><label>X位置<input id="imageX" type="number" value="20"></label><label>Y位置<input id="imageY" type="number" value="20"></label></div>
+      <div class="dialog-actions"><button value="cancel" class="secondary">キャンセル</button><button type="submit" value="default" class="primary">追加する</button></div>
     </form>
   </dialog>
 </body>
